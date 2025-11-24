@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# IDE foldersadd
+.idea/
+.vscode/
+
+# Model files
+trees/models/
+*.joblib
+
+# System files
+.DS_Store
