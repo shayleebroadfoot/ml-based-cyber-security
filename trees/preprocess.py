@@ -21,7 +21,6 @@ def split_features_and_labels(df: pd.DataFrame):
 
     return X_raw, y_binary, y_multiclass
 
-
 def encode_features(X_raw: pd.DataFrame) -> pd.DataFrame:
     """
     One-hot encode non-numeric columns (proto, service, state, etc.)
@@ -29,7 +28,6 @@ def encode_features(X_raw: pd.DataFrame) -> pd.DataFrame:
     non_numeric = X_raw.select_dtypes(include=["object"]).columns.tolist()
     X = pd.get_dummies(X_raw, columns=non_numeric, drop_first=True)
     return X
-
 
 def get_binary_splits(test_size: float = 0.2, random_state: int = 42):
     """

@@ -2,6 +2,8 @@
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 
+
+
 def print_binary_metrics(y_true, y_pred, title: str = ""):
     if title:
         print(f'===== {title} =====')
@@ -28,3 +30,5 @@ def print_multiclass_metrics(y_true, y_pred, title: str = ""):
     print(confusion_matrix(y_true, y_pred))
     print("\nClassification Report:")
     print(classification_report(y_true, y_pred, zero_division=0))
+
+

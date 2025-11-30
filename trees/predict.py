@@ -1,5 +1,6 @@
 # trees/predict.py
 
+import time
 import joblib
 
 from utils.load_data import load_data
@@ -35,16 +36,22 @@ def predict_binary(
     """
     Predicts binary label (0 = Normal, 1 = Attack) using the saved RF model.
     If evaluate=True, also prints metrics assuming 'label' column is present.
+    Also prints total and per-sample prediction time.
     """
-    # Load data and preprocess
     df = load_data(data_path)
     X, y_binary, _ = _prepare_features(df)
 
-    # Load model
     model = load_binary_model(model_path)
 
-    # Predict
+    start_pred = time.perf_counter()
     y_pred = model.predict(X)
+    end_pred = time.perf_counter()
+
+    total_time = end_pred - start_pred
+    per_sample_ms = (total_time / len(X)) * 1000.0
+
+    print(f"\nBinary prediction time: {total_time:.3f} s "
+          f"({per_sample_ms:.4f} ms per sample)")
 
     if evaluate and y_binary is not None:
         print_binary_metrics(y_binary, y_pred, title="Binary Prediction (Loaded Model)")
@@ -66,16 +73,22 @@ def predict_multiclass(
     """
     Predicts attack category ('attack_cat') using the saved RF model.
     If evaluate=True, also prints metrics assuming 'attack_cat' column is present.
+    Also prints total and per-sample prediction time.
     """
-    # Load data and preprocess
     df = load_data(data_path)
     X, _, y_multiclass = _prepare_features(df)
 
-    # Load model
     model = load_multiclass_model(model_path)
 
-    # Predict
+    start_pred = time.perf_counter()
     y_pred = model.predict(X)
+    end_pred = time.perf_counter()
+
+    total_time = end_pred - start_pred
+    per_sample_ms = (total_time / len(X)) * 1000.0
+
+    print(f"\nMulticlass prediction time: {total_time:.3f} s "
+          f"({per_sample_ms:.4f} ms per sample)")
 
     if evaluate and y_multiclass is not None:
         print_multiclass_metrics(
