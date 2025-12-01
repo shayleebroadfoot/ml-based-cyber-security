@@ -3,74 +3,76 @@
 import os
 import time
 import joblib
-from sklearn.tree import DecisionTreeClassifier
+import tracemalloc
+
 from sklearn.ensemble import RandomForestClassifier
 
 from trees.preprocess import get_multiclass_splits
 from utils.metrics import print_multiclass_metrics
 
+MULTICLASS_MODEL_PATH = os.path.join("trees", "models", "rf_multiclass.joblib")
 
-def train_multiclass_models():
+
+def train_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
+    """
+    Train the multiclass Random Forest model on the TRAIN split only
+    and save it to disk. No testing or prediction happens here.
+    """
     X_train, X_test, y_train, y_test = get_multiclass_splits()
 
-    # ----------------- Baseline Decision Tree -----------------
-    tree_multi = DecisionTreeClassifier(
-        max_depth=15,
-        min_samples_leaf=5,
-        random_state=42
-    )
-
-    start_tree = time.perf_counter()
-    tree_multi.fit(X_train, y_train)
-    end_tree = time.perf_counter()
-
-    y_pred_tree = tree_multi.predict(X_test)
-
-    print_multiclass_metrics(y_test, y_pred_tree, title="Decision Tree (Multiclass)")
-    print(f"Decision Tree training time: {end_tree - start_tree:.3f} s\n")
-
-    # ----------------- MOBILE-FRIENDLY Random Forest -----------------
-    # Previous heavier model:
-    # forest_multi = RandomForestClassifier(
-    #     n_estimators=400,
-    #     max_depth=25,
-    #     min_samples_split=10,
-    #     min_samples_leaf=1,
-    #     max_features=0.5,
-    #     class_weight=None,
-    #     n_jobs=-1,
-    #     bootstrap=False,
-    #     random_state=42
-    # )
-
-    # New lighter RF:
-    forest_multi = RandomForestClassifier(
-        n_estimators=60,
-        max_depth=12,
-        min_samples_leaf=5,
-        max_features="sqrt",
+    rf = RandomForestClassifier(
+        n_estimators=60,  # same
+        max_depth=22,  # same
+        min_samples_split=2,  # new
+        min_samples_leaf=1,  # higher -> smoother, fewer noisy leaves
+        max_features=0.5,  # fewer features per split, more diverse trees
+        class_weight="balanced",  # softer than balanced_subsample
+        criterion="entropy",  # try different split criterion
         n_jobs=-1,
         random_state=42
     )
 
-    start_rf = time.perf_counter()
-    forest_multi.fit(X_train, y_train)
-    end_rf = time.perf_counter()
+    start = time.perf_counter()
+    rf.fit(X_train, y_train)
+    end = time.perf_counter()
 
-    y_pred_rf = forest_multi.predict(X_test)
-
-    print_multiclass_metrics(y_test, y_pred_rf, title="Random Forest (Multiclass, mobile-friendly)")
-    print(f"Random Forest training time: {end_rf - start_rf:.3f} s")
-
-    # Save RF model and report file size
-    os.makedirs("trees/models", exist_ok=True)
-    model_path = os.path.join("trees", "models", "rf_multiclass.joblib")
-    joblib.dump(forest_multi, model_path)
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    joblib.dump(rf, model_path)
 
     size_bytes = os.path.getsize(model_path)
     size_kb = size_bytes / 1024.0
 
-    print(f"\nSaved multiclass RF model to: {model_path}")
-    print(f"Multiclass RF model size: {size_kb:.1f} KB\n")
+    print("=== Multiclass Random Forest: TRAINING ONLY ===")
+    print(f"Training time: {end - start:.3f} s")
+    print(f"Saved model to: {model_path}")
+    print(f"Model size: {size_kb:.1f} KB\n")
 
-    return forest_multi
+
+def test_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
+    """
+    Load the trained multiclass model and evaluate it on the TEST split only.
+    This is the ONLY place where testing/prediction on the test set happens.
+    """
+    X_train, X_test, y_train, y_test = get_multiclass_splits()
+
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Multiclass model not found at: {model_path}")
+
+    rf = joblib.load(model_path)
+
+    tracemalloc.start()
+    start = time.perf_counter()
+    y_pred = rf.predict(X_test)
+    end = time.perf_counter()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    total_time = end - start
+    per_sample_ms = (total_time / len(X_test)) * 1000.0
+    peak_mb = peak / (1024 ** 2)
+
+    print("=== Multiclass Random Forest: TEST RESULTS (held-out test set) ===")
+    print_multiclass_metrics(y_test, y_pred)
+    print(f"\n[Test] prediction time: {total_time:.3f} s "
+          f"({per_sample_ms:.4f} ms per sample)")
+    print(f"[Test] prediction peak memory: {peak_mb:.3f} MB\n")
