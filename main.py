@@ -13,44 +13,141 @@
 #     train_multiclass_tree_model()  # DT
 #     #
 #     # # Test RF + Tree
+
 #     # # test_binary_model()
 #     # # test_multiclass_model()  # RF
 #     test_multiclass_tree_model()  # DT
 
+
+
 # main.py
+#
+# Entry point for SENG 4610 Intrusion Detection Project
+#
+# Solution 1 – Logistic Regression (binary + multiclass)
+# Solution 2 – SVM (binary + multiclass)
+
+import sys
+from pathlib import Path
+
+# -------------------------------
+# Solution 1 – Logistic Regression
+# -------------------------------
+from logreg.binary import (
+    train_binary_logreg_model,
+    test_binary_logreg_model,
+)
+from logreg.multiclass import (
+    train_multiclass_logreg_model,
+    test_multiclass_logreg_model,
+)
+
+# -------------------------------
+# Solution 2 – SVM
+# -------------------------------
+from linsvm.binary import (
+    train_binary_svm_model,
+    test_binary_svm_model,
+)
+from linsvm.multiclass import (
+    train_multiclass_svm_model,
+    test_multiclass_svm_model,
+)
+
+# ---------------------------------------------------------------------
+# Resolve project root and data paths (for sanity checks only)
+# ---------------------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+DATA_DIR = PROJECT_ROOT / "data"
+
+TRAIN_CSV = DATA_DIR / "training_data.csv"
+FEATURES_CSV = DATA_DIR / "feature_description.csv"
+
+print("Resolved project root:", PROJECT_ROOT)
+print("Training CSV exists:", TRAIN_CSV.exists())
+print("Feature description exists:", FEATURES_CSV.exists())
 
 
-from logreg.binary import run_binary_logreg
-from logreg.multiclass import run_multiclass_logreg
+# ---------------------------------------------------------------------
+# Menu + main loop
+# ---------------------------------------------------------------------
+
+def print_menu():
+    print("=== SENG 4610 Intrusion Detection Project ===\n")
+
+    print("Solution 1 – Logistic Regression (LogReg)")
+    print("  1) Train Binary Logistic Regression")
+    print("  2) Test  Binary Logistic Regression")
+    print("  3) Train Multiclass Logistic Regression (attacks only)")
+    print("  4) Test  Multiclass Logistic Regression (attacks only)\n")
+
+    print("Solution 2 – Support Vector Machines (SVM)")
+    print("  5) Train Binary SVM")
+    print("  6) Test  Binary SVM")
+    print("  7) Train Multiclass SVM (attacks only)")
+    print("  8) Test  Multiclass SVM (attacks only)\n")
+
+    # If you later want trees / RF as Solution 3, you can add:
+    # print("Solution 3 – Tree-based Models (RF / DT)")
+    # print("  9) Train Multiclass Decision Tree")
+    # print(" 10) Test  Multiclass Decision Tree")
+    # print(" 11) Train Multiclass Random Forest")
+    # print(" 12) Test  Multiclass Random Forest\n")
+
+    print("  0) Exit")
 
 
 def main():
-    print("=== SENG 4610 Intrusion Detection Project ===")
-    print("1) Run Solution 1 - Binary Logistic Regression")
-    print("2) Run Solution 1 - Multiclass Logistic Regression (attacks only)")
-    print("3) Run both (binary then multiclass)")
-    print("0) Exit")
+    while True:
+        print_menu()
+        choice = input("Select an option: ").strip()
 
-    choice = input("Select an option: ").strip()
+        if choice == "0":
+            print("Exiting.")
+            sys.exit(0)
 
-    if choice == "1":
-        print("\n[Running Solution 1: Binary Logistic Regression]\n")
-        run_binary_logreg()
-    elif choice == "2":
-        print("\n[Running Solution 1: Multiclass Logistic Regression]\n")
-        run_multiclass_logreg()
-    elif choice == "3":
-        print("\n[Running Solution 1: Binary Logistic Regression]\n")
-        run_binary_logreg()
-        print("\n[Running Solution 1: Multiclass Logistic Regression]\n")
-        run_multiclass_logreg()
-    elif choice == "0":
-        print("Exiting.")
-    else:
-        print("Invalid choice.")
+        # -------------------------
+        # Solution 1 – LogReg
+        # -------------------------
+        elif choice == "1":
+            print("\n[Running Solution 1: TRAIN Binary Logistic Regression]\n")
+            train_binary_logreg_model()
+
+        elif choice == "2":
+            print("\n[Running Solution 1: TEST Binary Logistic Regression]\n")
+            test_binary_logreg_model()
+
+        elif choice == "3":
+            print("\n[Running Solution 1: TRAIN Multiclass Logistic Regression]\n")
+            train_multiclass_logreg_model()
+
+        elif choice == "4":
+            print("\n[Running Solution 1: TEST Multiclass Logistic Regression]\n")
+            test_multiclass_logreg_model()
+
+        # -------------------------
+        # Solution 2 – SVM
+        # -------------------------
+        elif choice == "5":
+            print("\n[Running Solution 2: TRAIN Binary SVM]\n")
+            train_binary_svm_model()
+
+        elif choice == "6":
+            print("\n[Running Solution 2: TEST Binary SVM]\n")
+            test_binary_svm_model()
+
+        elif choice == "7":
+            print("\n[Running Solution 2: TRAIN Multiclass SVM (attacks only)]\n")
+            train_multiclass_svm_model()
+
+        elif choice == "8":
+            print("\n[Running Solution 2: TEST Multiclass SVM (attacks only)]\n")
+            test_multiclass_svm_model()
+
+        else:
+            print("Invalid option. Please try again.\n")
 
 
 if __name__ == "__main__":
     main()
-
-

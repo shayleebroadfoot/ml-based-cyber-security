@@ -1,39 +1,37 @@
-# logreg/binary.py
+# linsvm/binary.py
 
 import os
 import time
 import joblib
-from pathlib import Path
 
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 
-from logreg.preprocess import get_binary_splits
+from .preprocess import get_binary_splits
 from utils.metrics import print_binary_metrics
 
-LOGREG_BINARY_MODEL_PATH = os.path.join("logreg", "models", "logreg_binary.joblib")
+SVM_BINARY_MODEL_PATH = os.path.join("linsvm", "models", "svm_binary.joblib")
 
 
-def train_binary_logreg_model(model_path: str = LOGREG_BINARY_MODEL_PATH):
+def train_binary_svm_model(model_path: str = SVM_BINARY_MODEL_PATH):
     """
-    Train a binary Logistic Regression on the TRAIN split only
+    Train a binary Linear SVM (attack vs normal) on the TRAIN split
     and save it to disk. No testing happens here.
     """
     X_train, X_test, y_train, y_test, preprocessor = get_binary_splits()
 
-    clf = LogisticRegression(
-        max_iter=1000,
-        class_weight="balanced",
-        solver="saga",
-        n_jobs=-1,
-        random_state=42,
-        verbose=0
+    svm = LinearSVC(
+        C=1.0,                # you can try 0.5 or 2.0 later
+        loss="squared_hinge",
+        max_iter=2000,
+        class_weight=None,    # keep precision-focused; avoid "balanced"
+        random_state=42
     )
 
     model = Pipeline(
         steps=[
             ("preproc", preprocessor),
-            ("clf", clf),
+            ("clf", svm)
         ]
     )
 
@@ -47,24 +45,24 @@ def train_binary_logreg_model(model_path: str = LOGREG_BINARY_MODEL_PATH):
     size_bytes = os.path.getsize(model_path)
     size_kb = size_bytes / 1024.0
 
-    print("=== Binary Logistic Regression: TRAINING ONLY ===")
+    print("=== Binary Linear SVM: TRAINING ONLY (attack vs normal) ===")
     print(f"Training time: {end - start:.3f} s")
     print(f"Saved model to: {model_path}")
     print(f"Model size: {size_kb:.1f} KB\n")
 
 
-def test_binary_logreg_model(model_path: str = LOGREG_BINARY_MODEL_PATH):
+def test_binary_svm_model(model_path: str = SVM_BINARY_MODEL_PATH):
     """
-    Load the trained binary Logistic Regression and evaluate it
-    on the TEST split only. Also measures prediction time and
-    peak memory during prediction.
+    Load the trained binary Linear SVM and evaluate it
+    on the TEST split (attack vs normal).
+    Also measures prediction time and peak memory during prediction.
     """
     import tracemalloc
 
-    X_train, X_test, y_train, y_test, preprocessor = get_binary_splits()
+    _, X_test, _, y_test, _ = get_binary_splits()
 
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Binary logistic model not found at: {model_path}")
+        raise FileNotFoundError(f"Binary SVM model not found at: {model_path}")
 
     model = joblib.load(model_path)
 
@@ -79,10 +77,8 @@ def test_binary_logreg_model(model_path: str = LOGREG_BINARY_MODEL_PATH):
     per_sample_ms = (total_time / len(X_test)) * 1000.0
     peak_mb = peak / (1024 ** 2)
 
-    print("=== Binary Logistic Regression: TEST RESULTS (held-out test set) ===")
+    print("=== Binary Linear SVM: TEST RESULTS (held-out test set) ===")
     print_binary_metrics(y_test, y_pred)
-    print(
-        f"\n[Test] prediction time: {total_time:.3f} s "
-        f"({per_sample_ms:.4f} ms per sample)"
-    )
+    print(f"\n[Test] prediction time: {total_time:.3f} s "
+          f"({per_sample_ms:.4f} ms per sample)")
     print(f"[Test] prediction peak memory: {peak_mb:.3f} MB\n")
