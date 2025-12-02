@@ -9,14 +9,14 @@ from sklearn.svm import LinearSVC
 
 from .preprocess import get_multiclass_splits
 from utils.metrics import print_multiclass_metrics
+from sklearn.svm import SVC
 
 SVM_MULTICLASS_MODEL_PATH = os.path.join("linsvm", "models", "svm_multiclass.joblib")
 
 
 def train_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
     """
-    Train a multiclass Linear SVM (attacks only) on the TRAIN split
-    and save it to disk. No testing happens here.
+    Train a multiclass Linear SVM and save it to disk
     """
     X_train, X_test, y_train, y_test, preprocessor = get_multiclass_splits()
 
@@ -27,6 +27,14 @@ def train_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
         class_weight=None,    # keep precision-focused; avoid "balanced"
         random_state=42
     )
+
+    # svm = SVC(
+    #     kernel="rbf",
+    #     C=1.0,
+    #     gamma="scale",
+    #     class_weight="balanced",  # often helpful with class imbalance
+    #     decision_function_shape="ovr"  # default; one-vs-rest
+    # )
 
     model = Pipeline(
         steps=[

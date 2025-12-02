@@ -6,6 +6,7 @@ import joblib
 
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 
 from .preprocess import get_binary_splits
 from utils.metrics import print_binary_metrics
@@ -20,13 +21,23 @@ def train_binary_svm_model(model_path: str = SVM_BINARY_MODEL_PATH):
     """
     X_train, X_test, y_train, y_test, preprocessor = get_binary_splits()
 
-    svm = LinearSVC(
-        C=1.0,                # you can try 0.5 or 2.0 later
-        loss="squared_hinge",
-        max_iter=2000,
-        class_weight=None,    # keep precision-focused; avoid "balanced"
-        random_state=42
+    # svm = LinearSVC(
+    #     C=1.0,                # you can try 0.5 or 2.0 later
+    #     loss="squared_hinge",
+    #     max_iter=2000,
+    #     class_weight=None,    # keep precision-focused; avoid "balanced"
+    #     random_state=42
+    # )
+
+    from sklearn.svm import SVC
+
+    svm_rbf = SVC(
+        kernel="rbf",
+        C=1.0,
+        gamma="scale",  # or tune gamma
+        class_weight="balanced"  # since you care about precision/recall on attacks
     )
+    svm_rbf.fit(X_train, y_train)
 
     model = Pipeline(
         steps=[

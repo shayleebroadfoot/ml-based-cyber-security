@@ -1,14 +1,19 @@
+
 # trees/multiclass.py
 
 import os
 import time
 import joblib
 import tracemalloc
+import math
+import numpy as np
 
 from sklearn.ensemble import RandomForestClassifier
 
 from trees.preprocess import get_multiclass_splits
 from utils.metrics import print_multiclass_metrics
+from sklearn.metrics import mean_squared_error
+
 
 MULTICLASS_MODEL_PATH = os.path.join("trees", "models", "rf_multiclass.joblib")
 
@@ -21,20 +26,28 @@ def train_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
     X_train, X_test, y_train, y_test = get_multiclass_splits()
 
     rf = RandomForestClassifier(
-        n_estimators=60,  # same
-        max_depth=22,  # same
-        min_samples_split=2,  # new
-        min_samples_leaf=1,  # higher -> smoother, fewer noisy leaves
-        max_features=0.5,  # fewer features per split, more diverse trees
-        class_weight="balanced",  # softer than balanced_subsample
-        criterion="entropy",  # try different split criterion
+        n_estimators=290,
+        max_depth=11,
+        min_samples_split=14,
+        min_samples_leaf=2,
+        max_features=0.16,
+        class_weight=None,
         n_jobs=-1,
+        bootstrap=True,
         random_state=42
     )
 
     start = time.perf_counter()
     rf.fit(X_train, y_train)
     end = time.perf_counter()
+
+    # TRAIN RMSE on numerically encoded labels
+    y_train_pred = rf.predict(X_train)
+    class_to_int = {label: idx for idx, label in enumerate(rf.classes_)}
+    y_train_int = np.array([class_to_int[label] for label in y_train])
+    y_train_pred_int = np.array([class_to_int[label] for label in y_train_pred])
+    train_rmse = math.sqrt(mean_squared_error(y_train_int, y_train_pred_int))
+    print(f"Train RMSE (encoded labels): {train_rmse:.4f}")
 
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     joblib.dump(rf, model_path)
@@ -66,6 +79,14 @@ def test_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
     end = time.perf_counter()
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
+
+    # TEST RMSE on numerically encoded labels
+    class_to_int = {label: idx for idx, label in enumerate(rf.classes_)}
+    y_test_int = np.array([class_to_int[label] for label in y_test])
+    y_pred_int = np.array([class_to_int[label] for label in y_pred])
+
+    test_rmse = math.sqrt(mean_squared_error(y_test_int, y_pred_int))
+    print(f"Test RMSE (encoded labels): {test_rmse:.4f}")
 
     total_time = end - start
     per_sample_ms = (total_time / len(X_test)) * 1000.0
