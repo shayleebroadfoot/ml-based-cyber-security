@@ -1,43 +1,44 @@
-# linsvm/multiclass.py
+# kernelsvm/multiclass.py
+#
+# Multiclass SVM with nonlinear kernels (RBF / poly) for attacks only.
+# Uses kernelsvm.preprocess for feature engineering and scaling.
 
 import os
 import time
 import joblib
 
 from sklearn.pipeline import Pipeline
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
+from sklearn.metrics import mean_squared_error
 
 from .preprocess import get_multiclass_splits
 from utils.metrics import print_multiclass_metrics
-from sklearn.svm import SVC
 
-SVM_MULTICLASS_MODEL_PATH = os.path.join("linsvm", "models", "svm_multiclass.joblib")
 
-def train_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
+RBF_MULTICLASS_MODEL_PATH = os.path.join("kernelsvm", "models", "rbf_multiclass.joblib")
+
+
+def train_multiclass_kernel_svm_model(model_path: str = RBF_MULTICLASS_MODEL_PATH):
     """
-    Train a multiclass Linear SVM and save it to disk
+    Train a multiclass kernel SVM (attacks only) and save it to disk.
+    Default is RBF kernel.
     """
     X_train, X_test, y_train, y_test, preprocessor = get_multiclass_splits()
 
-    svm = LinearSVC(
-        penalty='l1', #l2
-        loss='squared_hinge', #hinge or squared_hinge
-        dual=False,  # Was True originally
-        tol=1e-3, #1e4 (try 1e5 if "not converge warning")
-        C=1.0,
-        multi_class='ovr', #ovr or crammer_singer
-        fit_intercept=True,
-        intercept_scaling=1.0,
+    svm = SVC(
+        kernel="rbf",
+        C=1, #1
+        gamma=0.075,
         class_weight=None,
-        verbose=0,
-        random_state=42,
-        max_iter=5000,
+        decision_function_shape="ovr",
+        probability=False,
+        random_state=42
     )
 
     model = Pipeline(
         steps=[
             ("preproc", preprocessor),
-            ("clf", svm)
+            ("clf", svm),
         ]
     )
 
@@ -45,7 +46,7 @@ def train_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
     model.fit(X_train, y_train)
     end = time.perf_counter()
 
-    # ===== RMSE on TRAIN =====
+    # Train RMSE
     y_train_pred = model.predict(X_train)
     mse_train = mean_squared_error(y_train, y_train_pred)
     rmse_train = mse_train ** 0.5
@@ -56,34 +57,33 @@ def train_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
     size_bytes = os.path.getsize(model_path)
     size_kb = size_bytes / 1024.0
 
-    print("=== Multiclass Linear SVM: TRAINING ONLY (attacks subset) ===")
+    print("=== Multiclass Kernel SVM (RBF): TRAINING ONLY (attacks subset) ===")
     print(f"Training time: {end - start:.3f} s")
     print(f"Saved model to: {model_path}")
     print(f"Model size: {size_kb:.1f} KB")
     print(f"Train RMSE: {rmse_train:.4f}\n")
 
 
-from sklearn.metrics import mean_squared_error
-
-def test_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
+def test_multiclass_kernel_svm_model(model_path: str = RBF_MULTICLASS_MODEL_PATH):
     """
-    Load the trained multiclass Linear SVM and evaluate it
+    Load the trained multiclass kernel SVM and evaluate it
     on the TEST split (attacks only).
-    Also measures prediction time and peak memory during prediction.
+    Measures prediction time and RMSE.
     """
     import tracemalloc
 
     _, X_test, _, y_test, _ = get_multiclass_splits()
 
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Multiclass SVM model not found at: {model_path}")
-
-    model = joblib.load(model_path)
+        raise FileNotFoundError(f"Multiclass kernel SVM model not found at: {model_path}")
 
     tracemalloc.start()
+    model = joblib.load(model_path)
+
     start = time.perf_counter()
     y_pred = model.predict(X_test)
     end = time.perf_counter()
+
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
@@ -94,9 +94,13 @@ def test_multiclass_svm_model(model_path: str = SVM_MULTICLASS_MODEL_PATH):
     mse_test = mean_squared_error(y_test, y_pred)
     rmse_test = mse_test ** 0.5
 
-    print("=== Multiclass Linear SVM: TEST RESULTS (held-out test set) ===")
+    print("=== Multiclass Kernel SVM (RBF): TEST RESULTS (held-out test set) ===")
     print_multiclass_metrics(y_test, y_pred)
     print(f"Test RMSE: {rmse_test:.4f}")
     print(f"\n[Test] prediction time: {total_time:.3f} s "
           f"({per_sample_ms:.4f} ms per sample)")
     print(f"[Test] prediction peak memory: {peak_mb:.3f} MB\n")
+
+if __name__ == "__main__":
+    train_multiclass_kernel_svm_model()
+    test_multiclass_kernel_svm_model()

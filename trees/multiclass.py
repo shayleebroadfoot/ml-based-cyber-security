@@ -26,16 +26,17 @@ def train_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
     X_train, X_test, y_train, y_test = get_multiclass_splits()
 
     rf = RandomForestClassifier(
-        n_estimators=290,
-        max_depth=11,
-        min_samples_split=14,
-        min_samples_leaf=2,
-        max_features=0.16,
-        class_weight=None,
+        n_estimators=60, #480, 50, 60
+        max_depth=12, #10
+        min_samples_split=8, #13
+        min_samples_leaf=4, #2
+        max_features=0.2, #0.2
+        class_weight=None, #None
         n_jobs=-1,
         bootstrap=True,
         random_state=42
     )
+
 
     start = time.perf_counter()
     rf.fit(X_train, y_train)
@@ -71,9 +72,10 @@ def test_multiclass_model(model_path: str = MULTICLASS_MODEL_PATH):
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Multiclass model not found at: {model_path}")
 
+    tracemalloc.start()
     rf = joblib.load(model_path)
 
-    tracemalloc.start()
+    # tracemalloc.start()
     start = time.perf_counter()
     y_pred = rf.predict(X_test)
     end = time.perf_counter()

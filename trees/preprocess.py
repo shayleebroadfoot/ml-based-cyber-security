@@ -5,28 +5,46 @@ from sklearn.model_selection import train_test_split
 
 from utils.load_data import load_data
 
+# def split_features_and_labels(df: pd.DataFrame):
+#     """
+#     Split the dataframe into:
+#     - X_raw: all feature columns
+#     - y_binary: 0/1 label (attack vs normal)
+#     - y_multiclass: attack_cat string labels
+#     """
+#     if "label" not in df.columns or "attack_cat" not in df.columns:
+#         raise ValueError("Expected 'label' and 'attack_cat' columns in the dataset.")
+#
+#     y_binary = df["label"]
+#     y_multiclass = df["attack_cat"]
+#     X_raw = df.drop(columns=["label", "attack_cat"])
+#
+#     return X_raw, y_binary, y_multiclass
 def split_features_and_labels(df: pd.DataFrame):
-    """
-    Split the dataframe into:
-    - X_raw: all feature columns
-    - y_binary: 0/1 label (attack vs normal)
-    - y_multiclass: attack_cat string labels
-    """
+
     if "label" not in df.columns or "attack_cat" not in df.columns:
         raise ValueError("Expected 'label' and 'attack_cat' columns in the dataset.")
 
     y_binary = df["label"]
     y_multiclass = df["attack_cat"]
-    X_raw = df.drop(columns=["label", "attack_cat"])
 
+    drop_cols = ["label", "attack_cat"]
+
+    # SAFELY drop id if present
+    if "id" in df.columns:
+        drop_cols.append("id")
+
+    X_raw = df.drop(columns=drop_cols)
     return X_raw, y_binary, y_multiclass
+
+
 
 def encode_features(X_raw: pd.DataFrame) -> pd.DataFrame:
     """
     One-hot encode non-numeric columns (proto, service, state, etc.)
     """
     non_numeric = X_raw.select_dtypes(include=["object"]).columns.tolist()
-    X = pd.get_dummies(X_raw, columns=non_numeric, drop_first=True)
+    X = pd.get_dummies(X_raw, columns=non_numeric, drop_first=False)
     return X
 
 def get_binary_splits(test_size: float = 0.2, random_state: int = 42):
@@ -47,14 +65,27 @@ def get_binary_splits(test_size: float = 0.2, random_state: int = 42):
 
     return X_train, X_test, y_train, y_test
 
-
 def get_multiclass_splits(test_size: float = 0.2, random_state: int = 42):
     """
-    Same as above but for multiclass (attack_cat).
+    Train/test splits for multiclass attack classification (attack_cat),
+    using **attacks only**. Normal traffic is excluded because it is
+    already handled by the binary classifier.
     """
     df = load_data()
-    X_raw, _, y_multiclass = split_features_and_labels(df)
+
+    # ---- NEW: filter to attacks only ----
+    # Option 1: using label (0 = normal, 1 = attack)
+    df_attacks = df[df["label"] == 1].copy()
+    # or, equivalently:
+    # df_attacks = df[df["attack_cat"] != "Normal"].copy()
+
+    # Reuse the same splitter; y_multiclass now has no "Normal"
+    X_raw, _, y_multiclass = split_features_and_labels(df_attacks)
+
     X = encode_features(X_raw)
+
+    print("Multiclass unique labels:", sorted(y_multiclass.unique()))
+    print("Any 'Normal' left:", "Normal" in y_multiclass.unique())
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y_multiclass,
@@ -64,3 +95,4 @@ def get_multiclass_splits(test_size: float = 0.2, random_state: int = 42):
     )
 
     return X_train, X_test, y_train, y_test
+
