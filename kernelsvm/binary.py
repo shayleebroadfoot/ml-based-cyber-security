@@ -19,6 +19,7 @@ from sklearn.metrics import (
 )
 
 from kernelsvm.preprocess import get_binary_splits
+from utils.metrics import print_binary_metrics
 
 BINARY_MODEL_PATH = os.path.join("kernelsvm", "models", "svm_binary_rbf.joblib")
 
@@ -66,12 +67,10 @@ def train_binary_model(model_path: str = BINARY_MODEL_PATH):
     # TRAIN metrics only (no use of X_test / y_test)
     y_train_pred = clf.predict(X_train)
     train_rmse = np.sqrt(mean_squared_error(y_train, y_train_pred))
-    train_acc = accuracy_score(y_train, y_train_pred)
 
     print(f"Training time: {train_time:.3f} s")
     print(f"Saved model to: {model_path}")
     print(f"Model size: {model_size_mb:.1f} MB")
-    print(f"Train Accuracy : {train_acc:.6f}")
     print(f"Train RMSE     : {train_rmse:.4f}\n")
 
 
@@ -103,26 +102,13 @@ def test_binary_model(model_path: str = BINARY_MODEL_PATH):
     peak_mb = peak_bytes / (1024 * 1024)
 
     # TEST metrics
-    acc = accuracy_score(y_test, y_test_pred)
-    prec = precision_score(y_test, y_test_pred, zero_division=0)
-    rec = recall_score(y_test, y_test_pred, zero_division=0)
-    f1 = f1_score(y_test, y_test_pred, zero_division=0)
     test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
 
     print(f"Prediction time (test only): {pred_time:.3f} s")
     print(f"[Test] prediction peak memory: {peak_mb:.3f} MB\n")
 
-    print(f"Accuracy           : {acc:.6f}")
-    print(f"Precision (binary) : {prec:.6f}")
-    print(f"Recall (binary)    : {rec:.6f}")
-    print(f"F1 Score (binary)  : {f1:.6f}")
-    print(f"Test  RMSE         : {test_rmse:.4f}")
-    print()
-    print("Confusion Matrix (test):")
-    print(confusion_matrix(y_test, y_test_pred))
-
-
-
+    print_binary_metrics(y_test, y_test_pred)
+    print(f"Test RMSE: {test_rmse:.4f}")
 
 if __name__ == "__main__":
     train_binary_model()

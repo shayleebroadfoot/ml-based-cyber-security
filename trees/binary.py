@@ -82,7 +82,7 @@ def test_binary_model(model_path: str = BINARY_MODEL_PATH):
     per_sample_ms = (total_time / len(X_test)) * 1000.0
     peak_mb = peak / (1024 ** 2)
 
-    print("=== Binary Random Forest: TEST RESULTS (held-out test set) ===")
+    print("=== Binary Random Forest: TEST RESULTS ===")
     print_binary_metrics(y_test, y_pred)
     print(f"\n[Test] prediction time: {total_time:.3f} s "
           f"({per_sample_ms:.4f} ms per sample)")

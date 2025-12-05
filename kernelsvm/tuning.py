@@ -255,26 +255,13 @@ def tune_gamma_values(gamma_list, C=9.0):
 
     return results
 
-
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # tune_multiclass_kernel_svm()
     # tune_rbf_multiclass()
     # C_tests = [0.1, 0.25, 0.5, 1, 2, 3, 5, 7, 10]
     # C_tests = [7.5, 8.0, 8.5, 9.0, 9.5]
     # tune_C_values(C_tests)
-    gamma_tests = [0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15]
-    tune_gamma_values(gamma_tests, C=9.0)
+    # gamma_tests = [0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15]
+    # tune_gamma_values(gamma_tests, C=9.0)
 
-#--- Testing C = 7 ---
-# Train Time: 248.53 s
-# Accuracy : 0.943369
-# Precision: 0.979533
-# Recall   : 0.936361
-# F1 Score : 0.957460
-#--- Testing C = 9.0 ---
-# Train Time: 215.98 s
-# Accuracy : 0.943483
-# Precision: 0.979494
-# Recall   : 0.936570
-# F1 Score : 0.957552
 

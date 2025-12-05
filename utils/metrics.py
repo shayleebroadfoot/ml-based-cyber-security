@@ -3,7 +3,6 @@
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 
 
-
 def print_binary_metrics(y_true, y_pred, title: str = ""):
     if title:
         print(f'===== {title} =====')
